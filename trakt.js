@@ -281,9 +281,8 @@ async function showManualAuthDialog(userCode, verificationUrl) {
   }
 
   var script =
-    'display dialog "Open ' + escapeAppleScriptString(verificationUrl) + ' and enter this Trakt code:"' +
+    'display dialog "Enter this code to authenticate with Trakt:"' +
     ' & linefeed & linefeed & "' + escapeAppleScriptString(userCode) + '"' +
-    ' & linefeed & linefeed & "The code has also been copied to your clipboard."' +
     ' buttons {"OK"} default button "OK" with title "Trakt Scrobbler"';
 
   try {
@@ -295,6 +294,20 @@ async function showManualAuthDialog(userCode, verificationUrl) {
   } catch (_error) {
     return false;
   }
+}
+
+async function copyPendingAuthCode() {
+  if (!runtime.authCode) {
+    return {
+      ok: false,
+      message: "No active code."
+    };
+  }
+
+  var copied = await copyToClipboard(runtime.authCode);
+  return copied
+    ? { ok: true, message: "Code copied." }
+    : { ok: false, message: "Copy failed. Copy manually." };
 }
 
 function encodeQuery(params) {
@@ -738,14 +751,56 @@ function searchCacheKey(title, year) {
   return String(title || "").trim().toLowerCase() + "|" + String(year || "").trim();
 }
 
-async function search(query, type, year) {
+function normalizeTitle(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function readCachedTraktId(value) {
+  if (value && typeof value === "object") {
+    return Number(value.trakt || 0);
+  }
+
+  return Number(value || 0);
+}
+
+function isVerifiedEpisodeCacheEntry(value) {
+  return !!(value && typeof value === "object" && value.verified === true && Number(value.trakt || 0) > 0);
+}
+
+function createVerifiedEpisodeCacheEntry(traktId) {
+  return {
+    trakt: Number(traktId || 0),
+    verified: true
+  };
+}
+
+function episodeIdentityLabel(mediaInfo) {
+  return String(mediaInfo.showTitle || mediaInfo.title || "Unknown Show") +
+    " S" + String(mediaInfo.season || "?") +
+    "E" + String(mediaInfo.episode || "?");
+}
+
+function titlesMatch(expected, actual) {
+  var left = normalizeTitle(expected);
+  var right = normalizeTitle(actual);
+  if (!left || !right) return false;
+  return left === right;
+}
+
+async function search(query, type, year, limit) {
   var response = await authedRequest("GET", "/search/" + type, {
     query: {
       query: query,
       field: "title",
       years: year || undefined,
       page: 1,
-      limit: 1
+      limit: limit || 1
     }
   });
 
@@ -754,6 +809,128 @@ async function search(query, type, year) {
   }
 
   return Array.isArray(response.body) ? response.body : [];
+}
+
+async function fetchEpisodeForShow(traktId, season, episode) {
+  var response = await authedRequest("GET", "/shows/" + Number(traktId) + "/seasons/" + Number(season) + "/episodes/" + Number(episode));
+
+  if (response.statusCode === 404) {
+    return null;
+  }
+
+  if (response.statusCode >= 400) {
+    throw new Error(response.body.error_description || response.body.error || ("Trakt episode lookup failed with status " + response.statusCode));
+  }
+
+  return response.body || null;
+}
+
+async function verifyEpisodeCandidate(traktId, mediaInfo) {
+  var episode = await fetchEpisodeForShow(traktId, mediaInfo.season, mediaInfo.episode);
+  if (!episode) {
+    log("Trakt episode candidate rejected: show=" + traktId + " missing " + episodeIdentityLabel(mediaInfo));
+    return null;
+  }
+
+  var titleMatched = titlesMatch(mediaInfo.episodeTitle, episode.title);
+  log(
+    "Trakt episode candidate verified: show=" + traktId +
+    " " + episodeIdentityLabel(mediaInfo) +
+    (episode.title ? (' title="' + episode.title + '"') : "") +
+    (mediaInfo.episodeTitle ? (" parsedTitleMatch=" + (titleMatched ? "yes" : "no")) : "")
+  );
+
+  return {
+    trakt: Number(traktId || 0),
+    titleMatched: titleMatched,
+    episode: episode
+  };
+}
+
+function summarizeSearchCandidate(result) {
+  var show = result && result.show;
+  if (!show || !show.ids) {
+    return "invalid";
+  }
+
+  return "#" + String(show.ids.trakt || "?") +
+    " " + String(show.title || "Unknown") +
+    (show.year ? (" (" + show.year + ")") : "") +
+    " score=" + String(Number(result.score || 0));
+}
+
+async function resolveEpisodeIds(mediaInfo, bucket, key) {
+  var cached = bucket[key];
+  var cachedId = readCachedTraktId(cached);
+
+  if (cached === 0 || cached === -1 || cachedId === -1) {
+    return null;
+  }
+
+  if (cachedId > 0) {
+    if (isVerifiedEpisodeCacheEntry(cached)) {
+      return { trakt: cachedId };
+    }
+
+    log("Trakt episode cache hit requires verification: show=" + cachedId + " for " + episodeIdentityLabel(mediaInfo));
+    if (await verifyEpisodeCandidate(cachedId, mediaInfo)) {
+      bucket[key] = createVerifiedEpisodeCacheEntry(cachedId);
+      saveSearchCache();
+      return { trakt: cachedId };
+    }
+
+    delete bucket[key];
+    saveSearchCache();
+    log("Trakt episode cache entry invalidated for " + episodeIdentityLabel(mediaInfo));
+  }
+
+  var title = mediaInfo.showTitle || mediaInfo.title;
+  var year = mediaInfo.year || "";
+  var results = await search(title, "show", year || undefined, 5);
+
+  if ((!results || !results.length) && year) {
+    results = await search(title, "show", undefined, 5);
+  }
+
+  if (!results || !results.length) {
+    bucket[key] = -1;
+    saveSearchCache();
+    return null;
+  }
+
+  log("Trakt show search candidates for " + episodeIdentityLabel(mediaInfo) + ": " + results.map(summarizeSearchCandidate).join(" | "));
+
+  var verified = [];
+  for (var index = 0; index < results.length; index += 1) {
+    var candidate = results[index] || {};
+    var show = candidate.show;
+    var score = Number(candidate.score || 0);
+    if (score < SEARCH_SCORE_THRESHOLD || !show || !show.ids || !show.ids.trakt) {
+      continue;
+    }
+
+    var match = await verifyEpisodeCandidate(show.ids.trakt, mediaInfo);
+    if (!match) {
+      continue;
+    }
+
+    verified.push(match);
+    if (match.titleMatched) {
+      bucket[key] = createVerifiedEpisodeCacheEntry(match.trakt);
+      saveSearchCache();
+      return { trakt: match.trakt };
+    }
+  }
+
+  if (verified.length) {
+    bucket[key] = createVerifiedEpisodeCacheEntry(verified[0].trakt);
+    saveSearchCache();
+    return { trakt: verified[0].trakt };
+  }
+
+  bucket[key] = -1;
+  saveSearchCache();
+  return null;
 }
 
 async function getTraktIds(mediaInfo) {
@@ -768,12 +945,16 @@ async function getTraktIds(mediaInfo) {
   var bucket = type === "episode" ? cache.show : cache.movie;
   var key = searchCacheKey(title, year);
   var cached = bucket[key];
+  var cachedId = readCachedTraktId(cached);
 
-  if (cached === 0 || cached === -1) {
+  if (cached === 0 || cached === -1 || cachedId === -1) {
     return null;
   }
-  if (cached) {
-    return { trakt: cached };
+  if (type === "episode") {
+    return resolveEpisodeIds(mediaInfo, bucket, key);
+  }
+  if (cachedId > 0) {
+    return { trakt: cachedId };
   }
 
   var requiredType = type === "episode" ? "show" : "movie";
@@ -930,5 +1111,6 @@ module.exports = {
   ensureAccessToken: ensureAccessToken,
   getTraktIds: getTraktIds,
   prepareScrobblePayload: prepareScrobblePayload,
-  scrobble: scrobble
+  scrobble: scrobble,
+  copyPendingAuthCode: copyPendingAuthCode
 };

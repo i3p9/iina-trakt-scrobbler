@@ -58,7 +58,7 @@ node tests/monitor-state.js
 - Release builds are intended to use bundled Trakt app credentials from `trakt_keys.js`.
 - Until those are embedded, you can use the optional client ID and client secret override fields in plugin preferences.
 - Use the plugin sidebar for live auth state, device codes, connected account info, token validity, playback identity, and recent scrobble status.
-- Use `Plugin > Trakt Scrobbler > Show Sidebar` to reopen the sidebar quickly.
+- Use `Plugin > Trakt Scrobbler > Show Sidebar` or `Command+T` to reopen the sidebar quickly.
 - Connect to Trakt explicitly from the sidebar or plugin preferences.
 - Playback will not trigger device auth automatically; unauthenticated scrobbles are skipped until you connect.
 - Search results are cached in `@data/trakt-cache.json`.

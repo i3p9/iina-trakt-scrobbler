@@ -4,130 +4,148 @@
 <meta charset="UTF-8">
 <style>
   :root {
-    color-scheme: dark;
-    --bg-top: #141018;
-    --bg-bottom: #090c12;
-    --card: rgba(255, 255, 255, 0.06);
-    --card-strong: rgba(255, 255, 255, 0.1);
-    --border: rgba(255, 255, 255, 0.12);
-    --text: #f3f5f8;
-    --muted: #a0a9b6;
-    --good: #62c477;
-    --warn: #f2b34c;
-    --bad: #f46c6c;
-    --accent: #ff5b74;
-    --shadow: 0 20px 40px rgba(0, 0, 0, 0.24);
-    --font-ui: "SF Pro Display", "Avenir Next", "Segoe UI", sans-serif;
-    --font-mono: "SF Mono", "JetBrains Mono", "Menlo", monospace;
+    color-scheme: light dark;
+    --text: #dadada;
+    --secondary: rgba(255, 255, 255, 0.58);
+    --tertiary: rgba(255, 255, 255, 0.36);
+    --highlight-color: #2561dd;
+    --highlight-text: #fff;
+    --input-border: rgba(255, 255, 255, 0.2);
+    --input-border-light: rgba(255, 255, 255, 0.1);
+    --input-border-dark: rgba(255, 255, 255, 0.3);
+    --box-bg: rgba(0, 0, 0, 0.2);
+    --control-bg: rgba(255, 255, 255, 0.08);
+    --control-border: rgba(255, 255, 255, 0.12);
+    --blue: #2561dd;
+    --red: #ff453a;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    --font-mono: "SF Mono", "SFMono-Regular", "Menlo", monospace;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --text: #1f2023;
+      --secondary: rgba(0, 0, 0, 0.58);
+      --tertiary: rgba(0, 0, 0, 0.42);
+      --highlight-color: #087fff;
+      --highlight-text: #fff;
+      --input-border: rgba(0, 0, 0, 0.1);
+      --input-border-light: rgba(0, 0, 0, 0.05);
+      --input-border-dark: rgba(0, 0, 0, 0.08);
+      --box-bg: rgba(0, 0, 0, 0.05);
+      --control-bg: rgba(0, 0, 0, 0.04);
+      --control-border: rgba(0, 0, 0, 0.08);
+      --blue: #087fff;
+    }
   }
 
   * {
     box-sizing: border-box;
   }
 
+  html,
   body {
     margin: 0;
-    min-height: 100vh;
-    padding: 18px 14px 20px;
+    min-height: 100%;
+    background: transparent;
+  }
+
+  body {
     color: var(--text);
     font-family: var(--font-ui);
-    background:
-      radial-gradient(circle at top right, rgba(255, 91, 116, 0.18), transparent 34%),
-      radial-gradient(circle at top left, rgba(69, 124, 255, 0.16), transparent 28%),
-      linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    font-size: 13px;
+    line-height: 1.35;
+    background: none;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   .shell {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    min-height: 100vh;
+    padding: 8px 0 12px;
   }
 
-  .hero {
-    padding: 12px 2px 6px;
-  }
-
-  .eyebrow {
-    margin: 0 0 4px;
-    font-size: 11px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.56);
-  }
-
-  .title-row {
+  .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+    margin: 0 7px 8px;
+    padding: 0 1px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
   }
 
   h1 {
     margin: 0;
-    font-size: 23px;
+    font-size: 18px;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
     font-weight: 700;
-    letter-spacing: -0.03em;
   }
 
-  .hero-copy {
-    margin: 8px 0 0;
-    color: var(--muted);
-    line-height: 1.45;
-    font-size: 13px;
-  }
-
-  .pill {
+  .status-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    min-height: 28px;
-    padding: 0 12px;
+    min-height: 22px;
+    padding: 0 8px;
     border-radius: 999px;
-    border: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.06);
-    font-size: 11px;
-    font-weight: 700;
+    border: 1px solid var(--input-border);
+    background: var(--control-bg);
+    color: var(--secondary);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
     white-space: nowrap;
   }
 
-  .pill[data-state="connected"] {
-    color: var(--good);
-    border-color: rgba(98, 196, 119, 0.35);
-    background: rgba(98, 196, 119, 0.12);
+  .status-pill[data-state="error"],
+  .status-pill[data-state="missing_credentials"] {
+    color: var(--red);
+    border-color: rgba(255, 69, 58, 0.18);
   }
 
-  .pill[data-state="authorizing"] {
-    color: var(--warn);
-    border-color: rgba(242, 179, 76, 0.35);
-    background: rgba(242, 179, 76, 0.12);
+  .hero-status {
+    color: var(--secondary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 
-  .pill[data-state="error"],
-  .pill[data-state="missing_credentials"] {
-    color: var(--bad);
-    border-color: rgba(244, 108, 108, 0.35);
-    background: rgba(244, 108, 108, 0.12);
+  .hero-status[data-state="error"],
+  .hero-status[data-state="missing_credentials"] {
+    color: var(--red);
   }
 
-  .card {
-    position: relative;
-    overflow: hidden;
-    padding: 14px;
-    border-radius: 18px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow);
+  .section {
+    margin: 0 7px;
+    padding: 0 1px;
+    background: none;
+    border: none;
   }
 
-  .card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(140deg, rgba(255, 255, 255, 0.06), transparent 55%);
-    pointer-events: none;
+  .section + .section {
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--input-border);
   }
 
   .section-head {
@@ -135,158 +153,141 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 10px;
+    padding: 8px 0 0;
   }
 
-  .section-title {
+  .section-label {
     margin: 0;
-    font-size: 14px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tertiary);
+  }
+
+  .section-body {
+    padding: 6px 0 8px;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .title {
+    margin: 0;
+    font-size: 15px;
     font-weight: 700;
-    letter-spacing: 0.01em;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 
-  .section-subtitle {
-    margin: 0;
-    color: var(--muted);
+  .caption {
+    margin: 3px 0 0;
+    color: var(--secondary);
     font-size: 12px;
   }
 
-  .status-summary {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-  }
-
-  .status-detail {
-    margin: 8px 0 0;
-    color: var(--muted);
-    line-height: 1.45;
-    font-size: 13px;
-  }
-
   .code-box {
-    margin-top: 12px;
-    padding: 12px;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(0, 0, 0, 0.24);
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 3px;
+    border: 1px solid var(--input-border);
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  .code-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .code-label {
     margin: 0 0 6px;
-    color: var(--muted);
-    font-size: 11px;
-    letter-spacing: 0.12em;
+    color: var(--tertiary);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
   }
 
   .code-value {
+    width: 100%;
+    min-width: 0;
     margin: 0;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
     font-family: var(--font-mono);
-    font-size: 28px;
+    font-size: 19px;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    -webkit-appearance: none;
+    appearance: none;
+    user-select: text;
   }
 
-  .meta-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    margin-top: 12px;
-  }
-
-  .meta-row {
+  .pill-row {
     display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .control-row {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
-    align-items: baseline;
+    margin-top: 10px;
   }
 
-  .meta-key {
-    color: var(--muted);
+  .control-copy {
+    min-width: 0;
+  }
+
+  .control-label {
+    margin: 0;
     font-size: 12px;
-  }
-
-  .meta-value {
-    text-align: right;
-    font-size: 13px;
     font-weight: 600;
-  }
-
-  .button-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 14px;
-  }
-
-  button {
-    min-height: 36px;
-    padding: 0 14px;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    font: inherit;
-    cursor: pointer;
-    position: relative;
-    z-index: 2;
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    user-select: none;
-    transition: transform 140ms ease, opacity 140ms ease, background 140ms ease;
-  }
-
-  button:hover:not(:disabled) {
-    transform: translateY(-1px);
-  }
-
-  button:disabled {
-    opacity: 0.45;
-    cursor: default;
-    transform: none;
-  }
-
-  button.primary {
-    color: #110a0f;
-    background: linear-gradient(135deg, #ffd4dd, #ff6e85);
-  }
-
-  button.secondary {
     color: var(--text);
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.08);
   }
 
-  button.ghost {
-    color: var(--muted);
-    background: transparent;
-    border-color: rgba(255, 255, 255, 0.08);
+  .control-caption {
+    margin: 2px 0 0;
+    font-size: 11px;
+    color: var(--secondary);
   }
 
   .media-name {
     margin: 0;
-    font-size: 19px;
+    font-size: 15px;
     font-weight: 700;
-    letter-spacing: -0.03em;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 
   .media-meta {
-    margin: 8px 0 0;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.45;
+    margin: 4px 0 0;
+    color: var(--secondary);
+    font-size: 12px;
   }
 
   .progress-wrap {
-    margin-top: 14px;
+    margin-top: 8px;
   }
 
   .progress-bar {
     position: relative;
-    height: 7px;
+    height: 5px;
     border-radius: 999px;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.09);
+    background: var(--input-border-light);
   }
 
   .progress-fill {
@@ -294,174 +295,310 @@
     inset: 0 auto 0 0;
     width: 0%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #ff6680, #ffb468);
+    background: var(--blue);
   }
 
   .progress-meta {
     display: flex;
     justify-content: space-between;
     gap: 10px;
-    margin-top: 8px;
-    color: var(--muted);
-    font-size: 12px;
-  }
-
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    min-height: 28px;
-    padding: 0 10px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: var(--text);
+    margin-top: 6px;
+    color: var(--secondary);
     font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
   }
 
-  .chip.warn {
-    color: var(--warn);
-    border-color: rgba(242, 179, 76, 0.3);
-    background: rgba(242, 179, 76, 0.1);
-  }
-
-  .chip.good {
-    color: var(--good);
-    border-color: rgba(98, 196, 119, 0.3);
-    background: rgba(98, 196, 119, 0.1);
-  }
-
-  .scrobble-verb {
+  .scrobble-title {
     margin: 0;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .scrobble-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .scrobble-updated {
+    flex: 0 0 auto;
+    color: var(--secondary);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .scrobble-target {
+    margin: 6px 0 0;
+    color: var(--secondary);
+    font-size: 12px;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .scrobble-detail {
-    margin: 8px 0 0;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.45;
+    margin: 4px 0 0;
+    color: var(--secondary);
+    font-size: 12px;
   }
 
-  .empty {
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.45;
+  .footer {
+    margin: 8px 7px 0;
+    padding: 10px 1px 0;
+    background: none;
+    border: none;
+    border-top: 1px solid var(--input-border);
+  }
+
+  .footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .footer-stack {
+    position: relative;
+    display: grid;
+  }
+
+  .footer-panel {
+    grid-area: 1 / 1;
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .footer-panel[aria-hidden="true"] {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+  }
+
+  .confirm-copy {
+    margin: 0;
+    color: var(--secondary);
+    font-size: 11px;
+  }
+
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 28px;
+  }
+
+  .footer-note {
+    margin: 8px 0 0;
+    color: var(--secondary);
+    font-size: 11px;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .footer-note.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  button {
+    min-height: 28px;
+    padding: 0 11px;
+    border-radius: 3px;
+    border: 1px solid var(--input-border);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text);
+    background: var(--input-border-light);
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: opacity 120ms ease, background 120ms ease, border-color 120ms ease;
+  }
+
+  button:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  button.primary {
+    color: var(--highlight-text);
+    background: var(--highlight-color);
+    border-color: transparent;
+  }
+
+  button.secondary {
+    background: var(--input-border-light);
+  }
+
+  button.ghost {
+    color: var(--secondary);
+    background: transparent;
+  }
+
+  button.danger {
+    color: var(--red);
+    background: transparent;
+    border-color: rgba(255, 69, 58, 0.18);
+  }
+
+  button.switch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 38px;
+    min-height: 22px;
+    padding: 2px;
+    border-radius: 999px;
+    border-color: var(--input-border);
+    background: rgba(120, 120, 128, 0.32);
+  }
+
+  button.switch[aria-checked="true"] {
+    background: var(--blue);
+  }
+
+  button.switch[aria-checked="false"] {
+    background: rgba(120, 120, 128, 0.32);
+  }
+
+  .switch-thumb {
+    display: block;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transform: translateX(0);
+    transition: transform 120ms ease;
+  }
+
+  button.switch[aria-checked="true"] .switch-thumb {
+    transform: translateX(16px);
   }
 
   .small {
-    font-size: 12px;
-    color: var(--muted);
+    font-size: 11px;
+    color: var(--secondary);
   }
 
-  a {
-    color: #ffd1d9;
+  [hidden] {
+    display: none !important;
   }
 </style>
 </head>
 <body>
   <div class="shell">
-    <section class="hero">
-      <p class="eyebrow">Live Sidebar</p>
-      <div class="title-row">
-        <h1>Trakt</h1>
-        <span id="hero-pill" class="pill" data-state="disconnected">Disconnected</span>
+    <header class="header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 18 18" width="18" height="18" role="presentation">
+            <rect x="0.75" y="0.75" width="16.5" height="16.5" rx="4" fill="#ed1c24"></rect>
+            <path d="M5 4.8h8v2.2h-2.9V13H7.9V7H5z" fill="#fff"></path>
+          </svg>
+        </span>
+        <h1>Trakt Scrobbler</h1>
       </div>
-      <p class="hero-copy">Live connection status, token health, playback identity, and the last scrobble result for this IINA window.</p>
-    </section>
+      <span id="hero-pill" class="hero-status" data-state="disconnected">Disconnected</span>
+    </header>
 
-    <section class="card">
-      <div class="section-head">
-        <div>
-          <p class="section-title">Connection</p>
-          <p class="section-subtitle">Device auth and account state</p>
+    <section id="auth-section" class="section">
+      <div class="section-body">
+        <div class="top-row">
+          <div>
+            <p id="auth-summary" class="title">Not connected</p>
+            <p id="auth-detail" class="caption">Connect to start.</p>
+          </div>
+          <button id="connect-button" class="primary" type="button">Connect</button>
         </div>
-      </div>
-      <p id="auth-summary" class="status-summary">Not connected to Trakt</p>
-      <p id="auth-detail" class="status-detail">Use Connect to start device authorization.</p>
-      <div id="device-code-box" class="code-box" hidden>
-        <p class="code-label">Enter This Code At Trakt.tv/activate</p>
-        <p id="device-code" class="code-value"></p>
-        <p id="device-code-note" class="small">The code is also copied to your clipboard.</p>
-      </div>
-      <div class="meta-grid">
-        <div class="meta-row">
-          <span class="meta-key">Account</span>
-          <span id="account-value" class="meta-value">Unavailable</span>
+        <div id="device-code-box" class="code-box" hidden>
+          <p class="code-label">Activation Code</p>
+          <div class="code-row">
+            <input id="device-code" class="code-value" type="text" value="" readonly spellcheck="false" aria-label="Trakt activation code">
+            <button id="copy-code-button" class="secondary" type="button">Copy</button>
+          </div>
+          <p id="device-code-note" class="small">Copied to clipboard.</p>
         </div>
-        <div class="meta-row">
-          <span class="meta-key">Token</span>
-          <span id="token-value" class="meta-value">Not issued</span>
+        <div id="scrobble-control" class="control-row" hidden>
+          <div class="control-copy">
+            <p class="control-label">Scrobbling</p>
+            <p id="scrobble-toggle-caption" class="control-caption">On</p>
+          </div>
+          <button id="scrobble-toggle" class="switch" type="button" role="switch" aria-checked="true" aria-label="Toggle scrobbling">
+            <span class="switch-thumb"></span>
+          </button>
         </div>
-        <div class="meta-row">
-          <span class="meta-key">Credentials</span>
-          <span id="credentials-value" class="meta-value">Bundled app credentials</span>
-        </div>
-      </div>
-      <div class="button-row">
-        <button id="connect-button" class="primary" type="button">Connect to Trakt</button>
-        <button id="signout-button" class="secondary" type="button">Sign Out</button>
-        <button id="refresh-button" class="ghost" type="button">Refresh</button>
       </div>
     </section>
 
-    <section class="card">
+    <section id="playback-section" class="section">
       <div class="section-head">
-        <div>
-          <p class="section-title">Playback</p>
-          <p class="section-subtitle">Current file identity in this window</p>
-        </div>
-        <span id="playback-pill" class="pill" data-state="idle">Idle</span>
+        <p class="section-label">Playback</p>
+        <span id="playback-pill" class="status-pill" data-state="idle">Idle</span>
       </div>
-      <p id="media-name" class="media-name">No active media</p>
-      <p id="media-meta" class="media-meta">Load a parseable movie or episode file to see live playback details.</p>
-      <div class="progress-wrap">
-        <div class="progress-bar">
-          <div id="progress-fill" class="progress-fill"></div>
-        </div>
-        <div class="progress-meta">
-          <span id="progress-left">0%</span>
-          <span id="progress-right">00:00 / 00:00</span>
+      <div class="section-body">
+        <p id="media-name" class="media-name">No active media</p>
+        <p id="media-meta" class="media-meta">Load a movie or episode.</p>
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+          <div class="progress-meta">
+            <span id="progress-left">0%</span>
+            <span id="progress-right">00:00 / 00:00</span>
+          </div>
         </div>
       </div>
-      <div id="playback-chips" class="chips"></div>
+    </section>
+
+    <section id="scrobble-section" class="section">
+      <div class="section-head">
+        <p class="section-label">Scrobble Status</p>
+      </div>
+      <div class="section-body">
+        <div class="scrobble-head">
+          <p id="scrobble-verb" class="scrobble-title">No scrobble yet</p>
+          <span id="scrobble-updated" class="scrobble-updated">Just now</span>
+        </div>
+        <p id="scrobble-target" class="scrobble-target">No target</p>
+        <p id="scrobble-detail" class="scrobble-detail">Waiting for playback.</p>
+      </div>
     </section>
 
-    <section class="card">
-      <div class="section-head">
-        <div>
-          <p class="section-title">Scrobble</p>
-          <p class="section-subtitle">Last action sent by this plugin</p>
+    <footer id="bottom-actions" class="footer" hidden>
+      <div class="footer-stack">
+        <div id="footer-default" class="footer-panel" aria-hidden="false">
+          <div class="footer-row">
+            <div></div>
+            <div class="footer-actions">
+              <button id="reauth-button" class="secondary" type="button">Re-auth</button>
+              <button id="signout-button" class="danger" type="button">Sign Out</button>
+            </div>
+          </div>
+        </div>
+        <div id="footer-confirm" class="footer-panel" aria-hidden="true">
+          <div class="footer-row">
+            <p class="confirm-copy">Sign out of Trakt?</p>
+            <div class="footer-actions">
+              <button id="signout-cancel-button" class="secondary" type="button">No</button>
+              <button id="signout-confirm-button" class="danger" type="button">Yes</button>
+            </div>
+          </div>
         </div>
       </div>
-      <p id="scrobble-verb" class="scrobble-verb">Waiting for playback</p>
-      <p id="scrobble-detail" class="scrobble-detail">No scrobble has been attempted in this window yet.</p>
-      <div class="meta-grid">
-        <div class="meta-row">
-          <span class="meta-key">Target</span>
-          <span id="scrobble-target" class="meta-value">Unavailable</span>
-        </div>
-        <div class="meta-row">
-          <span class="meta-key">Updated</span>
-          <span id="scrobble-updated" class="meta-value">Just now</span>
-        </div>
-      </div>
-    </section>
+      <p id="footer-note" class="footer-note" hidden></p>
+    </footer>
   </div>
 
   <script>
     (function() {
       var state = {
+        scrobblingEnabled: true,
         auth: {
           state: "disconnected",
           summary: "Not connected to Trakt",
@@ -496,6 +633,13 @@
       };
       var stateReady = false;
       var pendingAction = "";
+      var confirmingSignout = false;
+      var authRequestMode = "";
+      var footerNotice = "";
+      var footerNoticeTimer = 0;
+      var copyCodeBusy = false;
+      var copyCodeFeedback = "";
+      var copyCodeFeedbackTimer = 0;
       var lastActionAt = 0;
 
       function send(name, payload) {
@@ -503,26 +647,11 @@
         iina.postMessage(name, payload);
       }
 
-      function formatCredentialMode(mode) {
-        if (mode === "bundled") return "Bundled app credentials";
-        if (mode === "override") return "Local credential override";
-        if (mode === "missing") return "Credentials unavailable";
-        return "Unknown";
-      }
-
-      function formatToken(token) {
-        if (!token || !token.expiresAt) return "Not issued";
-        if (token.expired) return "Expired";
-        var expiresAt = new Date(token.expiresAt);
-        if (Number.isNaN(expiresAt.getTime())) return "Token active";
-        return "Valid until " + expiresAt.toLocaleString();
-      }
-
-      function formatAccount(user) {
-        if (!user || !user.username) return "Unavailable";
-        var name = user.name ? " (" + user.name + ")" : "";
-        var vip = user.vip ? " • VIP" : "";
-        return "@" + user.username + name + vip;
+      function formatStateLabel(stateName) {
+        if (stateName === "authorizing") return "Waiting";
+        if (stateName === "missing_credentials") return "Missing";
+        if (stateName === "disconnected") return "Disconnected";
+        return titleCase(stateName || "idle");
       }
 
       function formatDuration(totalSeconds) {
@@ -541,14 +670,34 @@
       function formatProgress(progress) {
         var value = Number(progress || 0);
         if (!Number.isFinite(value)) value = 0;
-        return value.toFixed(2).replace(/\.00$/, "") + "%";
+        return String(Math.round(value)) + "%";
       }
 
       function formatUpdatedAt(value) {
         if (!value) return "Just now";
         var date = new Date(value);
         if (Number.isNaN(date.getTime())) return "Just now";
-        return date.toLocaleString();
+        return date.toLocaleTimeString([], {
+          hour: "numeric",
+          minute: "2-digit"
+        });
+      }
+
+      function formatRemaining(totalSeconds) {
+        var value = Math.max(0, Math.floor(Number(totalSeconds || 0)));
+        if (!Number.isFinite(value) || value <= 0) return "";
+        var hours = Math.floor(value / 3600);
+        var minutes = Math.floor((value % 3600) / 60);
+        if (hours > 0 && minutes > 0) return hours + "h " + minutes + "m";
+        if (hours > 0) return hours + "h";
+        if (minutes > 0) return minutes + "m";
+        return value + "s";
+      }
+
+      function formatVerificationTarget(value) {
+        return String(value || "")
+          .replace(/^https?:\/\//, "")
+          .replace(/\/+$/, "");
       }
 
       function titleCase(value) {
@@ -557,9 +706,76 @@
         });
       }
 
+      function compactAuthSummary(auth) {
+        if (!auth) return "Not connected";
+        if (auth.busy) return "Authorize in browser";
+        if (auth.connected && auth.user && auth.user.username) return "Logged in as @" + auth.user.username;
+        if (auth.connected) return "Connected";
+        if (auth.state === "error") return "Auth failed";
+        if (auth.state === "missing_credentials") return "No credentials";
+        return "Not connected";
+      }
+
+      function compactAuthDetail(auth) {
+        if (!auth) return "Connect to start.";
+        if (auth.busy) return "Use the code below.";
+        if (auth.connected) return "";
+        if (auth.state === "error") return "Connect again.";
+        if (auth.state === "missing_credentials") return "This build has no Trakt credentials.";
+        return "Connect to start.";
+      }
+
+      function compactScrobbleTitle(scrobble) {
+        if (!scrobble) return "Waiting";
+        if (scrobble.status === "ready") return "Ready";
+        if (scrobble.status === "queued") return titleCase(scrobble.verb || "Update") + " pending";
+        if (scrobble.status === "sending") return "Updating Trakt";
+        if (scrobble.status === "succeeded") {
+          if (scrobble.verb === "start") return "Watching on Trakt";
+          if (scrobble.verb === "pause") return "Paused on Trakt";
+          if (scrobble.verb === "stop") return "Stopped on Trakt";
+          return "Synced to Trakt";
+        }
+        if (scrobble.status === "duplicate") return "Already up to date";
+        if (scrobble.status === "unmatched") return "Title not matched";
+        if (scrobble.status === "skipped") {
+          if (scrobble.reason === "auth-required") return "Connect Trakt";
+          if (scrobble.reason === "missing-client-credentials") return "Missing credentials";
+          if (scrobble.reason === "missing-trakt-match") return "Title not matched";
+          return "Skipped";
+        }
+        if (scrobble.status === "failed") return "Trakt error";
+        if (scrobble.status === "disabled") return "Scrobbling off";
+        return "Waiting";
+      }
+
+      function compactScrobbleDetail(scrobble) {
+        if (!scrobble) return "Waiting for playback.";
+        if (scrobble.status === "ready") return "";
+        if (scrobble.status === "queued") return "Waiting to send.";
+        if (scrobble.status === "sending") return "";
+        if (scrobble.status === "succeeded") return "";
+        if (scrobble.status === "duplicate") return "";
+        if (scrobble.status === "unmatched") return "Try a cleaner file name.";
+        if (scrobble.status === "skipped") {
+          if (scrobble.reason === "auth-required") return "Connect from the top.";
+          if (scrobble.reason === "missing-client-credentials") return "This build needs Trakt app credentials.";
+          if (scrobble.reason === "missing-trakt-match") return "Try a cleaner file name.";
+          return "Skipped.";
+        }
+        if (scrobble.status === "failed") return scrobble.detail || "Failed.";
+        if (scrobble.status === "disabled") return "No updates will be sent.";
+        return "Waiting for playback.";
+      }
+
       function setText(id, value) {
         var node = document.getElementById(id);
         if (node) node.textContent = value;
+      }
+
+      function setValue(id, value) {
+        var node = document.getElementById(id);
+        if (node) node.value = value;
       }
 
       function setHidden(id, hidden) {
@@ -567,46 +783,47 @@
         if (node) node.hidden = !!hidden;
       }
 
-      function renderAuth() {
-        var auth = state.auth || {};
-        var heroPill = document.getElementById("hero-pill");
-        heroPill.dataset.state = auth.state || "disconnected";
-        heroPill.textContent = titleCase(auth.state || "disconnected");
-
-        setText("auth-summary", auth.summary || "Not connected to Trakt");
-        setText("auth-detail", auth.detail || "Use Connect to start device authorization.");
-        setText("account-value", formatAccount(auth.user));
-        setText("token-value", formatToken(auth.token));
-        setText("credentials-value", formatCredentialMode(auth.credentialMode));
-
-        var connectButton = document.getElementById("connect-button");
-        var signOutButton = document.getElementById("signout-button");
-        var refreshButton = document.getElementById("refresh-button");
-        connectButton.disabled = !stateReady || !!auth.busy || pendingAction === "connect";
-        signOutButton.disabled = !stateReady || !!auth.busy || !auth.connected || pendingAction === "signout";
-        refreshButton.disabled = !stateReady || pendingAction === "refresh";
-
-        if (auth.busy) {
-          connectButton.textContent = "Authorizing…";
-        } else if (auth.connected) {
-          connectButton.textContent = "Re-authenticate";
-        } else {
-          connectButton.textContent = "Connect to Trakt";
+      function showFooterNotice(message, durationMs) {
+        if (footerNoticeTimer) {
+          clearTimeout(footerNoticeTimer);
+          footerNoticeTimer = 0;
         }
 
-        var hasCode = !!auth.deviceCode;
-        setHidden("device-code-box", !hasCode);
-        if (hasCode) {
-          setText("device-code", auth.deviceCode);
-          var note = "The code is also copied to your clipboard.";
-          if (auth.verificationUrl) {
-            note = "Open " + auth.verificationUrl + " and paste this code. It is also copied to your clipboard.";
-          }
-          setText("device-code-note", note);
+        footerNotice = String(message || "").trim();
+        render();
+
+        if (!footerNotice) {
+          return;
         }
+
+        footerNoticeTimer = setTimeout(function() {
+          footerNotice = "";
+          footerNoticeTimer = 0;
+          render();
+        }, durationMs || 4200);
       }
 
-      function requestAction(kind) {
+      function showCopyCodeFeedback(message, durationMs) {
+        if (copyCodeFeedbackTimer) {
+          clearTimeout(copyCodeFeedbackTimer);
+          copyCodeFeedbackTimer = 0;
+        }
+
+        copyCodeFeedback = String(message || "").trim();
+        render();
+
+        if (!copyCodeFeedback) {
+          return;
+        }
+
+        copyCodeFeedbackTimer = setTimeout(function() {
+          copyCodeFeedback = "";
+          copyCodeFeedbackTimer = 0;
+          render();
+        }, durationMs || 2600);
+      }
+
+      function requestAction(kind, payload) {
         if (!stateReady) return;
 
         var now = Date.now();
@@ -618,10 +835,12 @@
 
         if (kind === "connect") {
           state.auth.busy = true;
+          authRequestMode = state.auth.connected ? "reauth" : "connect";
+          footerNotice = "";
         }
 
         render();
-        send(kind);
+        send(kind, payload);
       }
 
       function bindAction(buttonId, kind) {
@@ -645,55 +864,177 @@
         });
       }
 
+      function bindLocalAction(buttonId, handler) {
+        var button = document.getElementById(buttonId);
+        if (!button) return;
+
+        var activate = function(event) {
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          handler();
+        };
+
+        button.addEventListener("pointerdown", activate);
+        button.addEventListener("click", activate);
+        button.addEventListener("keydown", function(event) {
+          if (event.key === "Enter" || event.key === " ") {
+            activate(event);
+          }
+        });
+      }
+
+      function bindScrobbleToggle(buttonId) {
+        var button = document.getElementById(buttonId);
+        if (!button) return;
+
+        var activate = function(event) {
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          requestAction("toggle_scrobbling", {
+            enabled: !state.scrobblingEnabled
+          });
+        };
+
+        button.addEventListener("pointerdown", activate);
+        button.addEventListener("click", activate);
+        button.addEventListener("keydown", function(event) {
+          if (event.key === "Enter" || event.key === " ") {
+            activate(event);
+          }
+        });
+      }
+
+      function bindSelectableInput(inputId) {
+        var input = document.getElementById(inputId);
+        if (!input) return;
+
+        var selectAll = function() {
+          try {
+            input.focus();
+            input.select();
+          } catch (_error) {}
+        };
+
+        input.addEventListener("focus", selectAll);
+        input.addEventListener("click", selectAll);
+      }
+
+      function renderAuth() {
+        var auth = state.auth || {};
+        var connected = !!auth.connected;
+        var hasCode = !!auth.deviceCode;
+        var detail = compactAuthDetail(auth);
+        var heroPill = document.getElementById("hero-pill");
+        var connectButton = document.getElementById("connect-button");
+        var reauthButton = document.getElementById("reauth-button");
+        var signOutButton = document.getElementById("signout-button");
+        var signOutConfirmButton = document.getElementById("signout-confirm-button");
+        var signOutCancelButton = document.getElementById("signout-cancel-button");
+        var footerDefault = document.getElementById("footer-default");
+        var footerConfirm = document.getElementById("footer-confirm");
+        var footerNote = document.getElementById("footer-note");
+        var copyCodeButton = document.getElementById("copy-code-button");
+        var scrobbleToggle = document.getElementById("scrobble-toggle");
+        var reauthInFlight = pendingAction === "connect" && authRequestMode === "reauth";
+        var showConnectButton = !connected && !(auth.busy && authRequestMode === "reauth");
+        var showFooter = connected || reauthInFlight;
+        var showMainSections = connected || reauthInFlight;
+        var showScrobbleControl = connected || reauthInFlight;
+
+        if (!connected || auth.busy) {
+          confirmingSignout = false;
+        }
+
+        heroPill.dataset.state = auth.state || "disconnected";
+        heroPill.textContent = formatStateLabel(auth.state);
+
+        setText("auth-summary", compactAuthSummary(auth));
+        setText("auth-detail", detail);
+        connectButton.disabled = !stateReady || !!auth.busy || pendingAction === "connect";
+        connectButton.textContent = auth.busy
+          ? (authRequestMode === "reauth" ? "Re-auth…" : "Connecting…")
+          : "Connect";
+        connectButton.hidden = !showConnectButton;
+
+        reauthButton.disabled = !stateReady || !!auth.busy || pendingAction === "connect";
+        reauthButton.textContent = reauthInFlight ? "Re-auth…" : "Re-auth";
+        signOutButton.disabled = !stateReady || !!auth.busy || !connected || pendingAction === "signout";
+        signOutConfirmButton.disabled = !stateReady || !!auth.busy || pendingAction === "signout";
+        signOutCancelButton.disabled = !stateReady || !!auth.busy || pendingAction === "signout";
+        copyCodeButton.disabled = !stateReady || !hasCode || copyCodeBusy;
+        copyCodeButton.textContent = copyCodeBusy ? "Copying…" : "Copy";
+        scrobbleToggle.disabled = !stateReady || pendingAction === "toggle_scrobbling";
+        scrobbleToggle.setAttribute("aria-checked", state.scrobblingEnabled ? "true" : "false");
+        setText("scrobble-toggle-caption", state.scrobblingEnabled ? "On" : "Off");
+
+        setHidden("auth-detail", !detail);
+        setHidden("scrobble-control", !showScrobbleControl);
+        setHidden("playback-section", !showMainSections);
+        setHidden("scrobble-section", !showMainSections);
+        setHidden("bottom-actions", !showFooter);
+        setHidden("device-code-box", !hasCode);
+        footerDefault.setAttribute("aria-hidden", confirmingSignout ? "true" : "false");
+        footerConfirm.setAttribute("aria-hidden", confirmingSignout ? "false" : "true");
+        if (footerNote) {
+          footerNote.textContent = footerNotice;
+          footerNote.hidden = !footerNotice;
+          footerNote.classList.toggle("show", !!footerNotice);
+        }
+
+        if (hasCode) {
+          var verifyTarget = formatVerificationTarget(auth.verificationUrl) || "trakt.tv/activate";
+          setValue("device-code", auth.deviceCode);
+          setText("device-code-note", copyCodeFeedback || ("Enter at " + verifyTarget + "."));
+        }
+      }
+
       function renderPlayback() {
         var playback = state.playback || {};
         var playbackPill = document.getElementById("playback-pill");
+        var mediaMeta = document.getElementById("media-meta");
+        var fill = document.getElementById("progress-fill");
+        var progress = Math.max(0, Math.min(100, Number(playback.progress || 0)));
+
         playbackPill.dataset.state = playback.state || "idle";
         playbackPill.textContent = titleCase(playback.state || "idle");
 
         setText("media-name", playback.available ? (playback.mediaLabel || "Unknown media") : "No active media");
+
         if (!playback.available) {
-          setText("media-meta", "Load a parseable movie or episode file to see live playback details.");
+          mediaMeta.textContent = "Load a movie or episode.";
+          mediaMeta.hidden = false;
+        } else if (!state.scrobblingEnabled) {
+          mediaMeta.textContent = "Scrobbling is off.";
+          mediaMeta.hidden = false;
+        } else if (playback.preview) {
+          mediaMeta.textContent = "Preview guard.";
+          mediaMeta.hidden = false;
         } else {
-          var meta = [];
-          if (playback.parserSource) meta.push("Parser: " + titleCase(playback.parserSource));
-          if (playback.identifiedAt) meta.push("Identified " + formatUpdatedAt(playback.identifiedAt));
-          setText("media-meta", meta.join(" • "));
+          mediaMeta.textContent = "";
+          mediaMeta.hidden = true;
         }
 
-        var fill = document.getElementById("progress-fill");
-        var progress = Math.max(0, Math.min(100, Number(playback.progress || 0)));
         fill.style.width = progress + "%";
         setText("progress-left", formatProgress(progress));
         setText("progress-right", formatDuration(playback.position) + " / " + formatDuration(playback.duration));
-
-        var chips = document.getElementById("playback-chips");
-        chips.innerHTML = "";
-        var entries = [];
-        if (playback.preview) entries.push({ label: "Preview Guard", kind: "warn" });
-        if (playback.fastPause) entries.push({ label: "Fast Pause Guard", kind: "warn" });
-        if (playback.available && playback.parserSource) {
-          entries.push({ label: titleCase(playback.parserSource), kind: "good" });
-        }
-        if (!entries.length && playback.available) {
-          entries.push({ label: "Monitoring", kind: "good" });
-        }
-        entries.forEach(function(entry) {
-          var chip = document.createElement("span");
-          chip.className = "chip" + (entry.kind ? (" " + entry.kind) : "");
-          chip.textContent = entry.label;
-          chips.appendChild(chip);
-        });
       }
 
       function renderScrobble() {
         var scrobble = state.scrobble || {};
-        var verb = scrobble.verb ? titleCase(scrobble.verb) : "Waiting for playback";
-        var status = scrobble.status ? titleCase(scrobble.status) : "";
-        setText("scrobble-verb", status ? (verb + " • " + status) : verb);
-        setText("scrobble-detail", scrobble.detail || "No scrobble has been attempted in this window yet.");
-        setText("scrobble-target", scrobble.mediaLabel || "Unavailable");
+        var targetVisible = !!scrobble.mediaLabel;
+        var updatedVisible = !!scrobble.updatedAt && scrobble.status !== "idle" && scrobble.status !== "ready";
+        var detail = compactScrobbleDetail(scrobble);
+        setText("scrobble-verb", compactScrobbleTitle(scrobble));
+        setText("scrobble-detail", detail);
+        setText("scrobble-target", scrobble.mediaLabel || "No target");
         setText("scrobble-updated", formatUpdatedAt(scrobble.updatedAt));
+        setHidden("scrobble-target", !targetVisible);
+        setHidden("scrobble-updated", !updatedVisible);
+        setHidden("scrobble-detail", !detail);
       }
 
       function render() {
@@ -703,15 +1044,69 @@
       }
 
       bindAction("connect-button", "connect");
-      bindAction("signout-button", "signout");
-      bindAction("refresh-button", "refresh");
+      bindAction("reauth-button", "connect");
+      bindScrobbleToggle("scrobble-toggle");
+      bindSelectableInput("device-code");
+      bindLocalAction("copy-code-button", function() {
+        if (!state.auth || !state.auth.deviceCode || copyCodeBusy) {
+          return;
+        }
+        copyCodeBusy = true;
+        render();
+        send("copy_auth_code");
+      });
+      bindLocalAction("signout-button", function() {
+        footerNotice = "";
+        confirmingSignout = true;
+        render();
+      });
+      bindLocalAction("signout-cancel-button", function() {
+        confirmingSignout = false;
+        render();
+      });
+      bindLocalAction("signout-confirm-button", function() {
+        confirmingSignout = false;
+        requestAction("signout");
+      });
 
       if (window.iina && typeof iina.onMessage === "function") {
         iina.onMessage("state", function(payload) {
-          state = payload || state;
+          var nextState = payload || state;
+          var nextAuth = nextState.auth || {};
+          var authCompleted = authRequestMode && !nextAuth.busy;
+
+          state = nextState;
           stateReady = true;
-          pendingAction = "";
+
+          if (pendingAction === "signout" && !nextAuth.busy && !nextAuth.connected) {
+            pendingAction = "";
+          } else if (authCompleted) {
+            pendingAction = "";
+            if (nextAuth.connected) {
+              if (authRequestMode === "reauth") {
+                var remaining = formatRemaining(nextAuth.token && nextAuth.token.expiresInSeconds);
+                showFooterNotice(remaining ? ("Re-authenticated. Token valid for " + remaining + ".") : "Re-authenticated.");
+              } else {
+                showFooterNotice("Connected to Trakt.");
+              }
+            } else {
+              var failureDetail = nextAuth.detail || nextAuth.summary || "Unknown error.";
+              showFooterNotice((authRequestMode === "reauth" ? "Re-auth failed: " : "Connect failed: ") + failureDetail, 6200);
+            }
+            authRequestMode = "";
+          } else if (pendingAction && !nextAuth.busy) {
+            pendingAction = "";
+          }
+
           render();
+        });
+        iina.onMessage("copy_auth_result", function(payload) {
+          copyCodeBusy = false;
+          if (payload && payload.ok) {
+            showCopyCodeFeedback("Code copied.");
+          } else {
+            showCopyCodeFeedback((payload && payload.message) || "Copy failed. Copy manually.", 4200);
+          }
         });
       }
 

@@ -41,6 +41,7 @@ function createScrobbleStatus() {
     verb: "",
     mediaLabel: "",
     detail: "No scrobble has been attempted in this window yet.",
+    reason: "",
     progress: null,
     updatedAt: ""
   };
@@ -187,13 +188,22 @@ function cloneScrobbleStatus(status) {
     verb: status.verb,
     mediaLabel: status.mediaLabel,
     detail: status.detail,
+    reason: status.reason,
     progress: status.progress,
     updatedAt: status.updatedAt
   };
 }
 
 function setScrobbleStatus(values) {
-  lastScrobbleStatus = Object.assign({}, lastScrobbleStatus, values || {}, {
+  var incoming = values || {};
+  var next = Object.assign({}, lastScrobbleStatus, incoming);
+  if (!Object.prototype.hasOwnProperty.call(incoming, "reason") &&
+      incoming.status !== "skipped" &&
+      incoming.status !== "disabled") {
+    next.reason = "";
+  }
+
+  lastScrobbleStatus = Object.assign({}, next, {
     updatedAt: new Date().toISOString()
   });
   queueSidebarRefresh(false);
@@ -221,6 +231,8 @@ function registerMenuItems() {
 
   menu.addItem(menu.item("Show Sidebar", function() {
     showSidebarTab();
+  }, {
+    keyBinding: "Meta+t"
   }));
 }
 
@@ -255,6 +267,7 @@ async function buildSidebarPayload(forceProfileRefresh) {
   }
 
   return {
+    scrobblingEnabled: prefBool("scrobble_enabled", true),
     auth: {
       state: auth.state,
       summary: auth.summary,
@@ -325,9 +338,35 @@ function bindSidebarMessaging() {
     });
   });
 
+  sidebar.onMessage("toggle_scrobbling", function(payload) {
+    var enabled = !(payload && payload.enabled === false);
+    log("Sidebar requested scrobbling " + (enabled ? "enable" : "disable"));
+    setScrobblingEnabled(enabled);
+  });
+
   sidebar.onMessage("refresh", function() {
     log("Sidebar requested refresh");
     queueSidebarRefresh(true);
+  });
+
+  sidebar.onMessage("copy_auth_code", function() {
+    Promise.resolve().then(async function() {
+      var result = { ok: false, message: "No active code." };
+      if (typeof trakt.copyPendingAuthCode === "function") {
+        result = await trakt.copyPendingAuthCode();
+      }
+      try {
+        sidebar.postMessage("copy_auth_result", result);
+      } catch (_error) {}
+    }).catch(function(error) {
+      log("Sidebar auth code copy failed: " + errStr(error));
+      try {
+        sidebar.postMessage("copy_auth_result", {
+          ok: false,
+          message: "Copy failed. Copy manually."
+        });
+      } catch (_error) {}
+    });
   });
 }
 
@@ -441,6 +480,10 @@ function parsedLabel(parsed) {
     return parsed.showTitle + " S" + parsed.season + "E" + parsed.episode;
   }
   return parsed.title || parsed.kind;
+}
+
+function isScrobblingEnabled() {
+  return prefBool("scrobble_enabled", true);
 }
 
 function pad2(value) {
@@ -582,10 +625,11 @@ function identifyCurrentMedia() {
   }
 
   setScrobbleStatus({
-    status: "ready",
+    status: isScrobblingEnabled() ? "ready" : "disabled",
     verb: "",
     mediaLabel: currentMedia && currentMedia.mediaInfo ? mediaLabel(currentMedia.mediaInfo) : parsedLabel(parsed),
-    detail: "Media identified. Waiting for playback changes."
+    detail: isScrobblingEnabled() ? "Watching for playback changes." : "Scrobbling is turned off.",
+    reason: isScrobblingEnabled() ? "" : "disabled"
   });
   log("Parsed " + parsedLabel(parsed) + " via " + (parsed.parserSource || "unknown"));
   debugOsd("Parsed " + parsedLabel(parsed));
@@ -666,19 +710,78 @@ function buildStoppedSnapshot(prevSnapshot) {
   };
 }
 
-function resyncCurrentPlaybackAfterAuth() {
+function resyncCurrentPlayback(logMessage) {
   var snapshot = buildLiveSnapshot();
   if (!snapshot || !snapshot.mediaInfo || snapshot.state === monitor.State.Stopped) {
     return;
   }
 
   playbackState.lastScrobbleKey = "";
-  log("Re-syncing current playback after Trakt auth");
+  if (logMessage) {
+    log(logMessage);
+  }
   queueScrobble(monitor.stateVerb(snapshot.state), snapshot);
 }
 
+function resyncCurrentPlaybackAfterAuth() {
+  resyncCurrentPlayback("Re-syncing current playback after Trakt auth");
+}
+
+function setScrobblingEnabled(enabled) {
+  var nextValue = !!enabled;
+  var prevValue = isScrobblingEnabled();
+  if (nextValue === prevValue) {
+    queueSidebarRefresh(false);
+    return;
+  }
+
+  persistPreferences({
+    scrobble_enabled: nextValue
+  });
+
+  resetPlaybackTracking();
+  playbackState.lastScrobbleKey = "";
+
+  if (nextValue) {
+    log("Trakt scrobbling enabled");
+    importantOsd("Trakt scrobbling enabled");
+    if (currentMedia && currentMedia.mediaInfo) {
+      setScrobbleStatus({
+        status: "ready",
+        verb: "",
+        mediaLabel: mediaLabel(currentMedia.mediaInfo),
+        detail: "Watching for playback changes.",
+        reason: ""
+      });
+    } else {
+      setScrobbleStatus(createScrobbleStatus());
+    }
+    resyncCurrentPlayback("Re-syncing current playback after enabling scrobbling");
+    return;
+  }
+
+  log("Trakt scrobbling disabled");
+  importantOsd("Trakt scrobbling paused");
+  setScrobbleStatus({
+    status: "disabled",
+    verb: "",
+    mediaLabel: currentMedia && currentMedia.mediaInfo ? mediaLabel(currentMedia.mediaInfo) : "",
+    detail: "Scrobbling is turned off.",
+    reason: "disabled",
+    progress: null
+  });
+}
+
 function queueScrobble(verb, snapshot) {
-  if (!prefBool("scrobble_enabled", true)) {
+  if (!isScrobblingEnabled()) {
+    setScrobbleStatus({
+      status: "disabled",
+      verb: "",
+      mediaLabel: snapshot && snapshot.mediaInfo ? mediaLabel(snapshot.mediaInfo) : "",
+      detail: "Scrobbling is turned off.",
+      reason: "disabled",
+      progress: null
+    });
     return;
   }
 
@@ -703,6 +806,7 @@ function queueScrobble(verb, snapshot) {
     verb: verb,
     mediaLabel: mediaLabel(payload.mediaInfo),
     detail: "Queued for Trakt at " + payload.progress.toFixed(2) + "%.",
+    reason: "",
     progress: payload.progress
   });
   playbackState.scrobbleChain = playbackState.scrobbleChain.then(async function() {
@@ -712,6 +816,7 @@ function queueScrobble(verb, snapshot) {
       verb: verb,
       mediaLabel: mediaLabel(payload.mediaInfo),
       detail: "Sending " + verb + " to Trakt.",
+      reason: "",
       progress: payload.progress
     });
 
@@ -723,6 +828,7 @@ function queueScrobble(verb, snapshot) {
           verb: verb,
           mediaLabel: mediaLabel(payload.mediaInfo),
           detail: "Trakt accepted the " + verb + " scrobble.",
+          reason: "",
           progress: payload.progress
         });
         log("Scrobble " + verb + " succeeded for " + mediaLabel(payload.mediaInfo));
@@ -746,6 +852,7 @@ function queueScrobble(verb, snapshot) {
           status: "skipped",
           verb: verb,
           mediaLabel: mediaLabel(payload.mediaInfo),
+          reason: result.reason,
           detail: result.reason === "auth-required"
             ? "Scrobble skipped until you connect Trakt from the sidebar."
             : ("Scrobble skipped: " + result.reason),
@@ -761,6 +868,7 @@ function queueScrobble(verb, snapshot) {
           verb: verb,
           mediaLabel: mediaLabel(payload.mediaInfo),
           detail: "Trakt reported this scrobble as a duplicate.",
+          reason: "",
           progress: payload.progress
         });
         log("Scrobble duplicate ignored for " + mediaLabel(payload.mediaInfo));
@@ -773,6 +881,7 @@ function queueScrobble(verb, snapshot) {
           verb: verb,
           mediaLabel: mediaLabel(payload.mediaInfo),
           detail: "Trakt could not match this media identity.",
+          reason: "missing-trakt-match",
           progress: payload.progress
         });
         log("Trakt rejected the scrobble because the media was not found: " + mediaLabel(payload.mediaInfo));
@@ -784,6 +893,7 @@ function queueScrobble(verb, snapshot) {
         verb: verb,
         mediaLabel: mediaLabel(payload.mediaInfo),
         detail: "Trakt returned no actionable result.",
+        reason: "",
         progress: payload.progress
       });
       log("Scrobble returned no actionable result for " + mediaLabel(payload.mediaInfo));
@@ -793,6 +903,7 @@ function queueScrobble(verb, snapshot) {
         verb: verb,
         mediaLabel: mediaLabel(payload.mediaInfo),
         detail: errStr(error),
+        reason: "",
         progress: payload.progress
       });
       log("Scrobble failed for " + mediaLabel(payload.mediaInfo) + ": " + errStr(error));
@@ -810,6 +921,7 @@ function queueScrobble(verb, snapshot) {
       verb: verb,
       mediaLabel: mediaLabel(payload.mediaInfo),
       detail: errStr(error),
+      reason: "",
       progress: payload.progress
     });
     log("Scrobble queue failure: " + errStr(error));
