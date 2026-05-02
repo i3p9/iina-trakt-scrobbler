@@ -6,7 +6,11 @@ Trakt Scrobbler is an IINA plugin that scrobbles local movies and episodes to Tr
 
 The best way to install it is from IINA itself.
 
-Open `Plugins` in IINA, choose `Install from GitHub`, paste `https://github.com/i3p9/iina-trakt-scrobbler`, and install it. That is also the best way to get future updates.
+- Open `Plugins` in IINA, choose `Install from GitHub`
+- paste `i3p9/iina-trakt-scrobbler`, and install it
+- Restart IINA, and you should see the Trakt Scrobbler sidebar in the sidebar list. Click it, and follow the instructions to authenticate with Trakt.
+
+That is also the best way to get future updates.
 
 If you prefer, you can also download the `.iinaplgz` package from GitHub Releases and install that manually.
 
