@@ -56,7 +56,8 @@ Build a release package:
 - Tokens are stored in the macOS keychain when possible, with an `@data` fallback during development.
 - Search results are cached in `@data/trakt-cache.json`.
 - Debug logs are written to `@data/debug.log`.
+- Log file location in disk (for debugging): `"$HOME/Library/Application Support/com.colliderli.iina/plugins/.data/io.github.fahim.iinatraktscrobbler/debug.log"`
 
 ## Acknowledgements
 
-Inspired by `trakt-scrobbler`.
+Inspired by [trakt-scrobbler](https://github.com/iamkroot/trakt-scrobbler)
