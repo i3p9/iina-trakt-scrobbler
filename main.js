@@ -42,6 +42,7 @@ function createScrobbleStatus() {
   return {
     status: "idle",
     verb: "",
+    action: "",
     mediaLabel: "",
     detail: "No scrobble has been attempted in this window yet.",
     reason: "",
@@ -138,7 +139,40 @@ function importantOsd(message) {
   } catch (_error) {}
 }
 
-function maybeShowScrobbleStatusOsd(verb) {
+function successfulScrobbleAction(verb, result) {
+  if (result && result.action) {
+    return String(result.action);
+  }
+  return verb;
+}
+
+function successfulScrobbleProgress(payloadProgress, result) {
+  if (result && isFinite(Number(result.progress))) {
+    return Number(result.progress);
+  }
+  return Number(payloadProgress || 0);
+}
+
+function successfulScrobbleDetail(action, progress) {
+  var value = Number(progress || 0);
+  if (!isFinite(value)) value = 0;
+  if (action === "scrobble") return "Trakt marked this as watched at " + value.toFixed(2) + "%.";
+  if (action === "pause") return "Trakt saved playback progress at " + value.toFixed(2) + "%.";
+  if (action === "start") return "Trakt accepted playback at " + value.toFixed(2) + "%.";
+  return "Trakt accepted this scrobble at " + value.toFixed(2) + "%.";
+}
+
+function maybeShowScrobbleStatusOsd(verb, action) {
+  if (action === "scrobble") {
+    statusOsd("Watched on Trakt");
+    return;
+  }
+
+  if (action === "pause") {
+    statusOsd("Paused on Trakt");
+    return;
+  }
+
   if (verb === "start") {
     statusOsd("Watching on Trakt");
     return;
@@ -204,6 +238,7 @@ function cloneScrobbleStatus(status) {
   return {
     status: status.status,
     verb: status.verb,
+    action: status.action,
     mediaLabel: status.mediaLabel,
     detail: status.detail,
     reason: status.reason,
@@ -219,6 +254,9 @@ function setScrobbleStatus(values) {
       incoming.status !== "skipped" &&
       incoming.status !== "disabled") {
     next.reason = "";
+  }
+  if (!Object.prototype.hasOwnProperty.call(incoming, "action")) {
+    next.action = "";
   }
 
   lastScrobbleStatus = Object.assign({}, next, {
@@ -852,16 +890,23 @@ function queueScrobble(verb, snapshot) {
     try {
       var result = await trakt.scrobble(verb, payload.mediaInfo, payload.progress);
       if (result && result.ok) {
+        var traktAction = successfulScrobbleAction(verb, result);
+        var traktProgress = successfulScrobbleProgress(payload.progress, result);
         setScrobbleStatus({
           status: "succeeded",
           verb: verb,
+          action: traktAction,
           mediaLabel: mediaLabel(payload.mediaInfo),
-          detail: "Trakt accepted the " + verb + " scrobble.",
+          detail: successfulScrobbleDetail(traktAction, traktProgress),
           reason: "",
-          progress: payload.progress
+          progress: traktProgress
         });
-        log("Scrobble " + verb + " succeeded for " + mediaLabel(payload.mediaInfo));
-        maybeShowScrobbleStatusOsd(verb);
+        log(
+          "Scrobble " + verb +
+          " succeeded for " + mediaLabel(payload.mediaInfo) +
+          " (action=" + traktAction + ", progress=" + traktProgress.toFixed(2) + "%)"
+        );
+        maybeShowScrobbleStatusOsd(verb, traktAction);
         if (!firstScrobbleNoticeShown) {
           debugOsd("Scrobble flow active");
           firstScrobbleNoticeShown = true;
@@ -1108,6 +1153,15 @@ function handleStatusUpdate(reason) {
   }
 
   var prevSnapshot = playbackState.prevSnapshot;
+  if (prevSnapshot && monitor.shouldIgnoreEndRollover(prevSnapshot, currentSnapshot)) {
+    log(
+      "Ignoring end-of-file rollover reset for " +
+      mediaLabel(prevSnapshot.mediaInfo) +
+      " at " + currentSnapshot.progress.toFixed(2) + "%"
+    );
+    queueSidebarRefresh(false);
+    return;
+  }
   processTransition(prevSnapshot, currentSnapshot, reason || "status");
   playbackState.prevSnapshot = currentSnapshot;
   queueSidebarRefresh(false);
@@ -1136,6 +1190,10 @@ async function finalizeCurrentMedia(reason) {
   queueSidebarRefresh(false);
   if (reason === "end-file") {
     await flushScrobbleQueue("end-file", 2500);
+    if (currentMedia || lastSourceSignature) {
+      log("New media became active during end-file flush; preserving new playback state");
+      return;
+    }
   }
   resetPlaybackTracking();
   queueSidebarRefresh(false);

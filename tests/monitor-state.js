@@ -159,4 +159,16 @@ test("computeProgress clamps safely", function() {
   assert.strictEqual(monitor.computeProgress(1, 0), 0);
 });
 
+test("ignores end-of-file rollover reset to zero", function() {
+  const nearEnd = state(episodeA, 99.9, monitor.State.Playing, 100, 120);
+  const resetToZero = state(episodeA, 0, monitor.State.Playing, 101, 120);
+  assert.strictEqual(monitor.shouldIgnoreEndRollover(nearEnd, resetToZero), true);
+});
+
+test("does not treat ordinary seeks as end-of-file rollover", function() {
+  const midPlayback = state(episodeA, 60, monitor.State.Playing, 100, 120);
+  const resetToZero = state(episodeA, 0, monitor.State.Playing, 101, 120);
+  assert.strictEqual(monitor.shouldIgnoreEndRollover(midPlayback, resetToZero), false);
+});
+
 console.log("monitor state tests passed");

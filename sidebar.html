@@ -702,6 +702,7 @@
         scrobble: {
           status: "idle",
           verb: "",
+          action: "",
           mediaLabel: "",
           detail: "No scrobble has been attempted in this window yet.",
           progress: null,
@@ -820,6 +821,7 @@
       }
 
       function compactScrobbleTitle(scrobble) {
+        var action = scrobble && scrobble.action ? scrobble.action : "";
         if (!scrobble) return "Waiting";
         if ((scrobble.status === "queued" || scrobble.status === "sending") && scrobble.verb) {
           if (scrobble.verb === "start") return "Watching on Trakt";
@@ -829,6 +831,9 @@
         if (scrobble.status === "ready") return "Ready";
         if (scrobble.status === "queued" || scrobble.status === "sending") return "Updating Trakt";
         if (scrobble.status === "succeeded") {
+          if (action === "scrobble") return "Watched on Trakt";
+          if (action === "pause") return "Paused on Trakt";
+          if (action === "start") return "Watching on Trakt";
           if (scrobble.verb === "start") return "Watching on Trakt";
           if (scrobble.verb === "pause") return "Paused on Trakt";
           if (scrobble.verb === "stop") return "Stopped on Trakt";

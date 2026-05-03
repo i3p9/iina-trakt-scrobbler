@@ -375,6 +375,45 @@ async function run() {
     }));
   });
 
+  await test("returns trakt action and progress on successful scrobble", async function() {
+    const store = {};
+    const logs = [];
+    store[CACHE_PATH] = JSON.stringify({
+      movie: {
+        "big fat liar|2002": 123
+      },
+      show: {}
+    });
+    store[TOKEN_PATH] = JSON.stringify(makeToken());
+
+    const { trakt } = loadFreshTrakt(store, function(request) {
+      if (request.url.pathname === "/scrobble/stop") {
+        return {
+          statusCode: 200,
+          body: {
+            action: "scrobble",
+            progress: 99.92
+          }
+        };
+      }
+      throw new Error("Unhandled request: " + request.method + " " + request.url.pathname + request.url.search);
+    }, logs);
+
+    const result = await trakt.scrobble("stop", {
+      type: "movie",
+      title: "Big Fat Liar",
+      year: 2002
+    }, 99.92);
+
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.action, "scrobble");
+    assert.strictEqual(result.progress, 99.92);
+    assert.deepStrictEqual(result.body, {
+      action: "scrobble",
+      progress: 99.92
+    });
+  });
+
   console.log("trakt resolution tests passed");
 }
 

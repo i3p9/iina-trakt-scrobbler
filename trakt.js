@@ -1147,6 +1147,10 @@ async function scrobble(verb, mediaInfo, progress) {
 
   return {
     ok: true,
+    action: response.body && response.body.action ? String(response.body.action) : verb,
+    progress: response.body && isFinite(Number(response.body.progress))
+      ? Number(response.body.progress)
+      : Number(progress || 0),
     body: response.body
   };
 }

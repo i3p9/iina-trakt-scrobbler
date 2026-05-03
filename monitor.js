@@ -82,6 +82,22 @@ function createTransition(prev, current) {
   };
 }
 
+function shouldIgnoreEndRollover(prev, current) {
+  if (!prev || !current) return false;
+  if (mediaKey(prev.mediaInfo) !== mediaKey(current.mediaInfo)) return false;
+
+  var prevDuration = Number(prev.duration || 0);
+  var prevPosition = Number(prev.position || 0);
+  var currentPosition = Number(current.position || 0);
+  var currentProgress = Number(current.progress || 0);
+  var remaining = prevDuration - prevPosition;
+
+  if (!isFinite(prevDuration) || prevDuration <= 0) return false;
+  if (!isFinite(prevPosition) || !isFinite(currentPosition) || !isFinite(currentProgress)) return false;
+
+  return remaining <= 15 && currentPosition < 1 && currentProgress < 1;
+}
+
 function decideActions(prev, current, flags, config) {
   var options = config || {};
   var skipInterval = Number(options.skipInterval || 5);
@@ -180,5 +196,6 @@ module.exports = {
   stateVerb: stateVerb,
   mediaKey: mediaKey,
   createTransition: createTransition,
-  decideActions: decideActions
+  decideActions: decideActions,
+  shouldIgnoreEndRollover: shouldIgnoreEndRollover
 };
