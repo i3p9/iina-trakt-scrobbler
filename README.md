@@ -29,6 +29,7 @@ If you prefer, you can also download the `.iinaplgz` package from GitHub Release
 
 - Cache playback locally when a scrobble cannot be sent, then retry or reconcile it later
 - Add a manual search / correction flow in the sidebar for cases where a file is misidentified
+- Show when a plugin update is available in the sidebar
 
 ## Development
 

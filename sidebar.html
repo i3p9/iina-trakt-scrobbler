@@ -434,11 +434,19 @@
     padding: 14px 1px 0;
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    gap: 10px;
     color: var(--tertiary);
     font-size: 10px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+  }
+
+  .provider-copy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
   }
 
   .provider-logo {
@@ -446,6 +454,12 @@
     height: 12px;
     width: auto;
     opacity: 0.9;
+  }
+
+  .provider-version {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   @keyframes traktPulse {
@@ -650,8 +664,11 @@
     </footer>
 
     <div class="provider" aria-label="Trakt integration">
-      <span>Scrobbler for</span>
-      <img class="provider-logo" src="assets/trakt-logo-dark.svg" alt="Trakt">
+      <div class="provider-copy">
+        <span>Scrobbler for</span>
+        <img class="provider-logo" src="assets/trakt-logo-dark.svg" alt="Trakt">
+      </div>
+      <span id="provider-version" class="provider-version" hidden>v0.1.33</span>
     </div>
   </div>
 
@@ -689,6 +706,9 @@
           detail: "No scrobble has been attempted in this window yet.",
           progress: null,
           updatedAt: ""
+        },
+        app: {
+          version: ""
         }
       };
       var stateReady = false;
@@ -1139,10 +1159,17 @@
         setHidden("scrobble-detail", !detail);
       }
 
+      function renderProvider() {
+        var version = state.app && state.app.version ? ("v" + state.app.version) : "";
+        setText("provider-version", version);
+        setHidden("provider-version", !version);
+      }
+
       function render() {
         renderAuth();
         renderPlayback();
         renderScrobble();
+        renderProvider();
       }
 
       bindAction("connect-button", "connect");

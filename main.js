@@ -1,8 +1,9 @@
 const { core, event, file, preferences, utils, sidebar, menu } = iina;
 
-var parser = require("./parser.js");
+var parser = require("./parser.iina.js");
 var monitor = require("./monitor.js");
 var trakt = require("./trakt.js");
+var PLUGIN_VERSION = "0.1.33";
 var DEBUG_LOG_PATH = "@data/debug.log";
 var MAX_DEBUG_LOG_CHARS = 200000;
 var POLL_INTERVAL_MS = 2000;
@@ -284,6 +285,9 @@ async function buildSidebarPayload(forceProfileRefresh) {
   }
 
   return {
+    app: {
+      version: PLUGIN_VERSION
+    },
     scrobblingEnabled: prefBool("scrobble_enabled", true),
     auth: {
       state: auth.state,
