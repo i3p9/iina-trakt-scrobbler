@@ -17,6 +17,7 @@ var sidebarHandlersBound = false;
 var firstScrobbleNoticeShown = false;
 var missingCredentialsNoticeShown = false;
 var authRequiredNoticeShown = false;
+var guessitFailureLogged = false;
 var lastHandledAuthActionNonce = "";
 var lastAuthStatusSignature = "";
 var authActionChain = Promise.resolve();
@@ -47,28 +48,6 @@ function createScrobbleStatus() {
     updatedAt: ""
   };
 }
-
-function loadVendoredCommonJs(modulePath) {
-  var source = file.read(modulePath);
-  if (source === null || source === undefined) {
-    throw new Error("Failed to read vendored module: " + modulePath);
-  }
-
-  var module = { exports: {} };
-  var localRequire = function(requestPath) {
-    throw new Error("Vendored module import is not supported: " + requestPath);
-  };
-  var processShim = { env: {} };
-  var factory = new Function("module", "exports", "require", "process", source + "\nreturn module.exports;");
-  factory(module, module.exports, localRequire, processShim);
-  return module.exports;
-}
-
-parser.configure({
-  loadGuessitModule: function() {
-    return loadVendoredCommonJs("vendor/guessit-js.cjs");
-  }
-});
 
 trakt.configure({
   file: file,
@@ -103,6 +82,26 @@ function errStr(error) {
   if (!error) return "Unknown error";
   if (typeof error === "string") return error;
   return error.message || String(error);
+}
+
+function logGuessitFailureOnce() {
+  if (guessitFailureLogged || !parser || typeof parser.getDiagnostics !== "function") return;
+
+  var diagnostics = parser.getDiagnostics();
+  if (!diagnostics) return;
+  if (
+    diagnostics.guessitStatus !== "load-failed" &&
+    diagnostics.guessitStatus !== "unconfigured" &&
+    diagnostics.guessitStatus !== "runtime-failed"
+  ) return;
+
+  guessitFailureLogged = true;
+  if (diagnostics.guessitStatus === "runtime-failed") {
+    log("Guessit runtime failed: " + diagnostics.guessitError);
+    return;
+  }
+
+  log("Guessit unavailable: " + diagnostics.guessitLoadError);
 }
 
 function prefBool(key, fallbackValue) {
@@ -629,6 +628,7 @@ function identifyCurrentMedia() {
   var source = getCurrentSource();
   appendDebugLog("[IINATraktScrobbler] Parser attempt source=" + (source.url || source.title || ""));
   var parsed = parser.parseMediaFromSource(source.url, source.title);
+  logGuessitFailureOnce();
   currentMedia = parsed ? {
     source: source,
     parsed: parsed,

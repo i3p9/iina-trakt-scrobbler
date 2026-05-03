@@ -1,6 +1,7 @@
 var guessitModule = null;
 var guessitLoadError = null;
 var guessitModuleLoader = null;
+var guessitRuntimeError = null;
 
 var VIDEO_EXTENSION_RE = /\.(mkv|mp4|m4v|avi|mov|wmv|mpg|mpeg|ts|m2ts|webm|flv)$/i;
 var EPISODE_PATTERNS = [
@@ -225,6 +226,51 @@ function getGuessit() {
   return guessitModule;
 }
 
+function getDiagnostics() {
+  if (guessitModule && guessitRuntimeError) {
+    return {
+      guessitAvailable: true,
+      guessitStatus: "runtime-failed",
+      guessitLoadError: null,
+      guessitError: (guessitRuntimeError && guessitRuntimeError.message) || String(guessitRuntimeError)
+    };
+  }
+
+  if (guessitModule) {
+    return {
+      guessitAvailable: true,
+      guessitStatus: "loaded",
+      guessitLoadError: null,
+      guessitError: null
+    };
+  }
+
+  if (guessitLoadError) {
+    return {
+      guessitAvailable: false,
+      guessitStatus: "load-failed",
+      guessitLoadError: (guessitLoadError && guessitLoadError.message) || String(guessitLoadError),
+      guessitError: null
+    };
+  }
+
+  if (typeof guessitModuleLoader !== "function") {
+    return {
+      guessitAvailable: false,
+      guessitStatus: "unconfigured",
+      guessitLoadError: "Guessit module loader is not configured",
+      guessitError: null
+    };
+  }
+
+  return {
+    guessitAvailable: false,
+    guessitStatus: "not-loaded",
+    guessitLoadError: null,
+    guessitError: null
+  };
+}
+
 function pickFirstText(value) {
   if (Array.isArray(value)) return pickFirstText(value[0]);
   if (value === null || value === undefined) return "";
@@ -244,9 +290,32 @@ function normalizeGuessitText(value) {
   return prettifyTitle(text);
 }
 
+function pickEpisodeTitleCandidate(values, showTitle) {
+  var candidates = Array.isArray(values) ? values : [values];
+  var normalizedShowTitle = prettifyTitle(showTitle || "").toLowerCase();
+  var best = "";
+
+  for (var index = 0; index < candidates.length; index += 1) {
+    var rawValue = pickFirstText(candidates[index]);
+    if (!rawValue || /%[0-9A-F]{2}/i.test(rawValue)) continue;
+
+    var normalized = prettifyTitle(safeDecode(rawValue));
+    if (!normalized) continue;
+    if (!best) {
+      best = normalized;
+    }
+    if (normalized.toLowerCase() !== normalizedShowTitle) {
+      return normalized;
+    }
+  }
+
+  return best;
+}
+
 function chooseEpisodeTitle(guess, fallback) {
-  var title = normalizeGuessitText(guess.episode_title || guess.alternative_title || "");
-  if (!title || /%[0-9A-F]{2}/i.test(pickFirstText(guess.episode_title || guess.alternative_title || ""))) {
+  var showTitle = normalizeGuessitText(guess.title) || (fallback && fallback.kind === "episode" ? fallback.showTitle : "");
+  var title = pickEpisodeTitleCandidate(guess.episode_title || guess.alternative_title || "", showTitle);
+  if (!title) {
     return fallback && fallback.kind === "episode" ? (fallback.episodeTitle || "") : "";
   }
   return title;
@@ -320,8 +389,10 @@ function tryGuessitParse(value) {
   if (!candidate) return null;
 
   try {
+    guessitRuntimeError = null;
     return api.guessit(candidate);
-  } catch (_error) {
+  } catch (error) {
+    guessitRuntimeError = error;
     return null;
   }
 }
@@ -353,6 +424,7 @@ module.exports = {
       guessitLoadError = null;
     }
   },
+  getDiagnostics: getDiagnostics,
   parseMediaFromSource: parseMediaFromSource,
   heuristicParseMediaFromSource: heuristicParseMediaFromSource
 };
