@@ -857,8 +857,12 @@ function queueScrobble(verb, snapshot) {
     return;
   }
 
+  var effectiveVerb = (trakt && typeof trakt.normalizeScrobbleVerb === "function")
+    ? trakt.normalizeScrobbleVerb(verb, payload.progress)
+    : verb;
+
   var scrobbleKey = [
-    verb,
+    effectiveVerb,
     monitor.mediaKey(payload.mediaInfo),
     String(Math.round(payload.progress * 100) / 100)
   ].join("|");
@@ -870,31 +874,39 @@ function queueScrobble(verb, snapshot) {
   playbackState.lastScrobbleKey = scrobbleKey;
   setScrobbleStatus({
     status: "queued",
-    verb: verb,
+    verb: effectiveVerb,
     mediaLabel: mediaLabel(payload.mediaInfo),
     detail: "Queued for Trakt at " + payload.progress.toFixed(2) + "%.",
     reason: "",
     progress: payload.progress
   });
-  log("Scrobble " + verb + " queued for " + mediaLabel(payload.mediaInfo) + " at " + payload.progress.toFixed(2) + "%");
+  if (effectiveVerb !== verb) {
+    log(
+      "Scrobble " + verb +
+      " normalized to " + effectiveVerb +
+      " for " + mediaLabel(payload.mediaInfo) +
+      " at " + payload.progress.toFixed(2) + "%"
+    );
+  }
+  log("Scrobble " + effectiveVerb + " queued for " + mediaLabel(payload.mediaInfo) + " at " + payload.progress.toFixed(2) + "%");
   playbackState.scrobbleChain = playbackState.scrobbleChain.then(async function() {
     setScrobbleStatus({
       status: "sending",
-      verb: verb,
+      verb: effectiveVerb,
       mediaLabel: mediaLabel(payload.mediaInfo),
-      detail: "Sending " + verb + " to Trakt.",
+      detail: "Sending " + effectiveVerb + " to Trakt.",
       reason: "",
       progress: payload.progress
     });
 
     try {
-      var result = await trakt.scrobble(verb, payload.mediaInfo, payload.progress);
+      var result = await trakt.scrobble(effectiveVerb, payload.mediaInfo, payload.progress);
       if (result && result.ok) {
-        var traktAction = successfulScrobbleAction(verb, result);
+        var traktAction = successfulScrobbleAction(effectiveVerb, result);
         var traktProgress = successfulScrobbleProgress(payload.progress, result);
         setScrobbleStatus({
           status: "succeeded",
-          verb: verb,
+          verb: effectiveVerb,
           action: traktAction,
           mediaLabel: mediaLabel(payload.mediaInfo),
           detail: successfulScrobbleDetail(traktAction, traktProgress),
@@ -902,11 +914,11 @@ function queueScrobble(verb, snapshot) {
           progress: traktProgress
         });
         log(
-          "Scrobble " + verb +
+          "Scrobble " + effectiveVerb +
           " succeeded for " + mediaLabel(payload.mediaInfo) +
           " (action=" + traktAction + ", progress=" + traktProgress.toFixed(2) + "%)"
         );
-        maybeShowScrobbleStatusOsd(verb, traktAction);
+        maybeShowScrobbleStatusOsd(effectiveVerb, traktAction);
         if (!firstScrobbleNoticeShown) {
           debugOsd("Scrobble flow active");
           firstScrobbleNoticeShown = true;
@@ -925,7 +937,7 @@ function queueScrobble(verb, snapshot) {
         }
         setScrobbleStatus({
           status: "skipped",
-          verb: verb,
+          verb: effectiveVerb,
           mediaLabel: mediaLabel(payload.mediaInfo),
           reason: result.reason,
           detail: result.reason === "auth-required"
@@ -940,7 +952,7 @@ function queueScrobble(verb, snapshot) {
       if (result && result.duplicate) {
         setScrobbleStatus({
           status: "duplicate",
-          verb: verb,
+          verb: effectiveVerb,
           mediaLabel: mediaLabel(payload.mediaInfo),
           detail: "Trakt reported this scrobble as a duplicate.",
           reason: "",
@@ -953,7 +965,7 @@ function queueScrobble(verb, snapshot) {
       if (result && result.notFound) {
         setScrobbleStatus({
           status: "unmatched",
-          verb: verb,
+          verb: effectiveVerb,
           mediaLabel: mediaLabel(payload.mediaInfo),
           detail: "Trakt could not match this media identity.",
           reason: "missing-trakt-match",
@@ -965,7 +977,7 @@ function queueScrobble(verb, snapshot) {
 
       setScrobbleStatus({
         status: "unknown",
-        verb: verb,
+        verb: effectiveVerb,
         mediaLabel: mediaLabel(payload.mediaInfo),
         detail: "Trakt returned no actionable result.",
         reason: "",
@@ -975,7 +987,7 @@ function queueScrobble(verb, snapshot) {
     } catch (error) {
       setScrobbleStatus({
         status: "failed",
-        verb: verb,
+        verb: effectiveVerb,
         mediaLabel: mediaLabel(payload.mediaInfo),
         detail: errStr(error),
         reason: "",

@@ -414,6 +414,53 @@ async function run() {
     });
   });
 
+  await test("normalizes high-progress pause to stop", async function() {
+    const store = {};
+    const logs = [];
+    store[CACHE_PATH] = JSON.stringify({
+      show: {
+        "make some noise|": {
+          trakt: 196240,
+          verified: true
+        }
+      },
+      movie: {}
+    });
+    store[TOKEN_PATH] = JSON.stringify(makeToken());
+
+    const { trakt, calls } = loadFreshTrakt(store, function(request) {
+      if (request.url.pathname === "/scrobble/stop") {
+        return {
+          statusCode: 200,
+          body: {
+            action: "scrobble",
+            progress: 88.83
+          }
+        };
+      }
+      throw new Error("Unhandled request: " + request.method + " " + request.url.pathname + request.url.search);
+    }, logs);
+
+    const result = await trakt.scrobble("pause", {
+      type: "episode",
+      title: "Make Some Noise",
+      showTitle: "Make Some Noise",
+      season: 3,
+      episode: 18,
+      episodeTitle: "A Date That Is Only Red Flags"
+    }, 88.83);
+
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(result.verb, "stop");
+    assert.strictEqual(result.action, "scrobble");
+    assert(calls.some(function(call) {
+      return call.indexOf("POST /scrobble/stop") === 0;
+    }));
+    assert(logs.some(function(line) {
+      return line.indexOf("Normalizing Trakt pause to stop at 88.83%") >= 0;
+    }));
+  });
+
   console.log("trakt resolution tests passed");
 }
 

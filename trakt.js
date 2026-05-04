@@ -333,6 +333,17 @@ function summarizeBody(value) {
   }
 }
 
+function normalizeScrobbleVerb(verb, progress) {
+  var resolvedVerb = String(verb || "");
+  var resolvedProgress = Number(progress || 0);
+
+  if (resolvedVerb === "pause" && resolvedProgress >= 80) {
+    return "stop";
+  }
+
+  return resolvedVerb;
+}
+
 function shouldSkipEarlyScrobble(verb, progress) {
   return (verb === "pause" || verb === "stop") && Number(progress || 0) < 1;
 }
@@ -1079,9 +1090,20 @@ async function scrobble(verb, mediaInfo, progress) {
   }
 
   payload.progress = Number(progress || 0);
-  if (shouldSkipEarlyScrobble(verb, payload.progress)) {
+  var requestVerb = normalizeScrobbleVerb(verb, payload.progress);
+
+  if (requestVerb !== verb) {
     log(
-      "Skipping Trakt " + verb +
+      "Normalizing Trakt " + verb +
+      " to " + requestVerb +
+      " at " + payload.progress.toFixed(2) + "% for " +
+      mediaIdentityLabel(mediaInfo)
+    );
+  }
+
+  if (shouldSkipEarlyScrobble(requestVerb, payload.progress)) {
+    log(
+      "Skipping Trakt " + requestVerb +
       " below 1% progress for " +
       mediaIdentityLabel(mediaInfo) +
       " at " + payload.progress.toFixed(2) + "%"
@@ -1089,12 +1111,12 @@ async function scrobble(verb, mediaInfo, progress) {
     return {
       ok: false,
       skip: true,
-      reason: earlyScrobbleReason(verb)
+      reason: earlyScrobbleReason(requestVerb)
     };
   }
   var response;
   try {
-    response = await authedRequest("POST", "/scrobble/" + verb, {
+    response = await authedRequest("POST", "/scrobble/" + requestVerb, {
       body: payload
     });
   } catch (error) {
@@ -1127,7 +1149,7 @@ async function scrobble(verb, mediaInfo, progress) {
   if (response.statusCode >= 400) {
     log(
       "Trakt scrobble HTTP " + response.statusCode +
-      " verb=" + verb +
+      " verb=" + requestVerb +
       " payload=" + summarizeBody(payload) +
       " body=" + (response.rawBody || summarizeBody(response.body))
     );
@@ -1141,13 +1163,14 @@ async function scrobble(verb, mediaInfo, progress) {
     error.responseBody = response.body;
     error.responseRawBody = response.rawBody;
     error.requestPayload = payload;
-    error.scrobbleVerb = verb;
+    error.scrobbleVerb = requestVerb;
     throw error;
   }
 
   return {
     ok: true,
-    action: response.body && response.body.action ? String(response.body.action) : verb,
+    verb: requestVerb,
+    action: response.body && response.body.action ? String(response.body.action) : requestVerb,
     progress: response.body && isFinite(Number(response.body.progress))
       ? Number(response.body.progress)
       : Number(progress || 0),
@@ -1173,6 +1196,7 @@ module.exports = {
   usingEmbeddedCredentials: usingEmbeddedCredentials,
   ensureAccessToken: ensureAccessToken,
   getTraktIds: getTraktIds,
+  normalizeScrobbleVerb: normalizeScrobbleVerb,
   prepareScrobblePayload: prepareScrobblePayload,
   scrobble: scrobble,
   copyPendingAuthCode: copyPendingAuthCode
